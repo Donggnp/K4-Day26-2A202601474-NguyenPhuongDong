@@ -4,13 +4,17 @@ Tool `get_weather` được định nghĩa schema thủ công VÀ thực thi nga
 chính file app này. Model chỉ QUYẾT ĐỊNH gọi tool nào; app mới là nơi chạy.
 
 Cách chạy:
-    pip install -r ../requirements.txt
-    export GEMINI_API_KEY=...
-    python weather_function_calling.py
+    source ../.venv/bin/activate
+    python weather_function_calling.py   # tự nạp GEMINI_API_KEY từ .env ở gốc repo
 """
 
+from pathlib import Path
+
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 client = genai.Client()
 
@@ -38,7 +42,30 @@ get_weather_declaration = types.FunctionDeclaration(
     ),
 )
 
-TOOLS = [types.Tool(function_declarations=[get_weather_declaration])]
+# 1b. App tự định nghĩa schema của tool dự báo thời tiết
+get_forecast_declaration = types.FunctionDeclaration(
+    name="get_forecast",
+    description="Lấy dự báo thời tiết nhiều ngày tới của một thành phố",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "city": types.Schema(
+                type=types.Type.STRING, description="Tên thành phố"
+            ),
+            "days": types.Schema(
+                type=types.Type.INTEGER,
+                description="Số ngày muốn dự báo (1-7), mặc định 3",
+            ),
+        },
+        required=["city"],
+    ),
+)
+
+TOOLS = [
+    types.Tool(
+        function_declarations=[get_weather_declaration, get_forecast_declaration]
+    )
+]
 
 
 # 2. App tự thực thi tool (trong thực tế sẽ gọi API thời tiết thật)
@@ -70,6 +97,44 @@ def get_weather(city: str) -> str:
     return json.dumps({"city": city, **mock_data.get(city, default)}, ensure_ascii=False)
 
 
+# 2b. App tự thực thi tool dự báo (trong thực tế sẽ gọi API thời tiết thật)
+def get_forecast(city: str, days: int = 3) -> str:
+    """Trả về dự báo thời tiết (mock) *days* ngày tới của *city*. Dùng làm tool cho model."""
+    import json
+    from datetime import date, timedelta
+
+    base_data = {
+        "Hà Nội": {"nhiệt_độ_nền": 29, "điều_kiện": ["mưa nhẹ", "nhiều mây", "nắng gián đoạn"]},
+        "Hồ Chí Minh": {"nhiệt_độ_nền": 33, "điều_kiện": ["mưa rào", "nắng nóng", "oi bức"]},
+        "Đà Nẵng": {"nhiệt_độ_nền": 30, "điều_kiện": ["nhiều mây", "nắng đẹp", "gió nhẹ"]},
+    }
+    info = base_data.get(
+        city, {"nhiệt_độ_nền": 28, "điều_kiện": ["không có dữ liệu chi tiết"]}
+    )
+
+    days = max(1, min(days, 7))
+    today = date.today()
+    du_bao = []
+    for i in range(days):
+        dieu_kien = info["điều_kiện"][i % len(info["điều_kiện"])]
+        nhiet_do = info["nhiệt_độ_nền"] + (i % 3) - 1
+        du_bao.append(
+            {
+                "ngày": (today + timedelta(days=i)).isoformat(),
+                "nhiệt_độ": f"{nhiet_do}°C",
+                "thời_tiết": dieu_kien,
+            }
+        )
+
+    return json.dumps({"city": city, "dự_báo": du_bao}, ensure_ascii=False)
+
+
+AVAILABLE_FUNCTIONS = {
+    "get_weather": get_weather,
+    "get_forecast": get_forecast,
+}
+
+
 def run(prompt: str) -> str:
     """Gửi *prompt* tới Gemini, tự động xử lý function calling và trả về câu trả lời cuối."""
     contents: list[types.Content] = [
@@ -94,7 +159,8 @@ def run(prompt: str) -> str:
         function_responses = []
         for fc in resp.function_calls:
             print(f"  [model yêu cầu] {fc.name}({fc.args})")
-            result = get_weather(**fc.args)  # <-- app chạy, không phải model
+            func = AVAILABLE_FUNCTIONS[fc.name]
+            result = func(**fc.args)  # <-- app chạy, không phải model
             print(f"  [app thực thi]  -> {result}")
             function_responses.append(
                 types.Part.from_function_response(
@@ -118,6 +184,6 @@ def run(prompt: str) -> str:
 
 
 if __name__ == "__main__":
-    question = "Thời tiết Hà Nội và Đà Nẵng hôm nay thế nào?"
+    question = "Thời tiết Hà Nội hôm nay thế nào, và dự báo 3 ngày tới ở Đà Nẵng ra sao?"
     print(f"User: {question}\n")
     print("Trả lời:", run(question))

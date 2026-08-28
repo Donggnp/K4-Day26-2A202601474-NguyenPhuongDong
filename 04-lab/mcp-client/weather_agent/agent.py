@@ -2,9 +2,14 @@
 Weather Agent - Connects to Remote MCP Server on Cloud Run
 Successfully connects to custom MCP HTTP endpoints!
 """
+from pathlib import Path
+import logging
+
+from dotenv import load_dotenv
 from google.adk import Agent
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset, StreamableHTTPConnectionParams
-import logging
+
+load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

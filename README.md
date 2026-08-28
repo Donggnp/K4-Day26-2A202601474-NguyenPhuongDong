@@ -29,24 +29,46 @@ day26-mcp/
 
 ## Quick start
 
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+Toàn bộ repo dùng **chung 1 `.venv` và 1 `.env` ở thư mục gốc** (kể cả `04-lab/`) — không tạo venv/env riêng cho từng folder nữa.
 
+```bash
+# Tạo venv chung 1 lần (đã tạo sẵn nếu bạn đang đọc file này sau khi setup)
+uv venv .venv --python 3.12
+uv pip install -r requirements.txt --python .venv/bin/python
+
+# Kích hoạt venv + nạp API key từ .env vào biến môi trường (chạy ở gốc repo)
+source .venv/bin/activate
+set -a && source .env && set +a
+```
+
+File `.env` ở gốc repo chứa:
+
+```
+GEMINI_API_KEY=...      # dùng chung cho 01-function-calling và 04-lab
+GOOGLE_API_KEY=...      # ADK/genai đều đọc được key này
+WEATHERAPI_KEY=...      # dùng cho 04-lab/mcp-server
+```
+
+Sau khi `source .venv/bin/activate` + nạp `.env`, chạy các bài bằng `python` bình thường (không cần `uv run` nữa vì venv đã active):
+
+```bash
 # MCP demo (không cần API key)
 cd 02-mcp-basics && python weather_client.py
 
-# Function Calling (cần Gemini API key)
-export GEMINI_API_KEY=...
+# Function Calling (cần GEMINI_API_KEY)
 cd 01-function-calling && python weather_function_calling.py
 
-# Production — Auth (2 terminal)
+# Production — Auth (2 terminal, cùng activate .venv)
 cd 03-production
 python auth_server.py              # terminal 1
 python auth_client.py              # terminal 2
 
 # Production — Tool Registry
 cd 03-production && python registry_client.py
+
+# Lab 04 — MCP server + ADK agent (2 terminal)
+cd 04-lab/mcp-server && python weather.py       # terminal 1 (cần WEATHERAPI_KEY)
+cd 04-lab/mcp-client && adk web                 # terminal 2 (cần GOOGLE_API_KEY)
 ```
 
 ---

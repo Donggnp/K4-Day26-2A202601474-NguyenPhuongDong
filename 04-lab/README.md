@@ -50,17 +50,14 @@ So với bài 02 (viết client thủ công bằng `mcp.ClientSession`), ADK gi�
 
 ## Setup
 
+Lab này dùng **venv và `.env` chung ở gốc repo** (`../../.venv`, `../../.env`), không tạo riêng trong `mcp-server/` hay `mcp-client/` nữa. Xem [Quick start ở README gốc](../README.md#quick-start) để setup lần đầu.
+
 ### 1. MCP Server
 
 ```bash
-cd mcp-server
-uv sync
-
-# Set your WeatherAPI key (get one free at https://weatherapi.com)
-export WEATHERAPI_KEY="your_weatherapi_key"
-
-# Start the server (runs on port 8085 by default)
-uv run python weather.py
+# Ở gốc repo: source .venv/bin/activate && set -a && source .env && set +a
+cd 04-lab/mcp-server
+python weather.py
 ```
 
 The server will be available at `http://localhost:8085/mcp`.
@@ -68,14 +65,9 @@ The server will be available at `http://localhost:8085/mcp`.
 ### 2. ADK Agent (Client)
 
 ```bash
-cd mcp-client
-uv sync
-
-# Create .env file with your Gemini API key
-echo "GOOGLE_API_KEY=your_gemini_api_key" > .env
-
-# Start ADK web interface
-uv run adk web
+# Cùng shell đã activate venv + nạp .env ở trên
+cd 04-lab/mcp-client
+adk web
 ```
 
 Open http://localhost:8000 in your browser, select `weather_agent`, and ask about the weather.
@@ -84,6 +76,6 @@ Open http://localhost:8000 in your browser, select `weather_agent`, and ask abou
 
 | Variable | Where | Description |
 |----------|-------|-------------|
-| `WEATHERAPI_KEY` | mcp-server | API key from weatherapi.com |
-| `GOOGLE_API_KEY` | mcp-client/.env | Gemini API key |
+| `WEATHERAPI_KEY` | `.env` gốc repo | API key from weatherapi.com |
+| `GOOGLE_API_KEY` | `.env` gốc repo | Gemini API key |
 | `PORT` | mcp-server (env) | Override server port (default: 8085) |

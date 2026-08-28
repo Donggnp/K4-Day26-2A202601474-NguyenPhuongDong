@@ -11,15 +11,15 @@ def check_environment():
     """Check if .env file exists and is configured"""
     print("🔍 Checking environment configuration...")
     
-    env_file = Path(".env")
+    env_file = Path(__file__).resolve().parents[2] / ".env"
     if not env_file.exists():
-        print("❌ .env file not found")
-        print("   Run: echo 'GOOGLE_API_KEY=your_key' > .env")
+        print("❌ .env file not found at repo root")
+        print("   Run: echo 'GOOGLE_API_KEY=your_key' > ../../.env")
         return False
-    
+
     # Check if GOOGLE_API_KEY is set
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(env_file)
     
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key or api_key == "your_google_api_key_here":
@@ -142,8 +142,7 @@ def main():
     if all(checks):
         print("✅ All checks passed!")
         print("\n🚀 Ready to start!")
-        print("   Run: ./start_agent.sh")
-        print("   Or:  uv run adk web")
+        print("   Run: adk web")
         print("\n📍 Then open: http://localhost:8000")
         return 0
     else:

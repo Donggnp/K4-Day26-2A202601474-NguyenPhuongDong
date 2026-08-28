@@ -15,14 +15,18 @@ Cách chạy (cùng thư mục với weather_server.py, client tự khởi độ
 
 import asyncio
 import sys
+from pathlib import Path
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+SERVER_SCRIPT = Path(__file__).resolve().parent / "weather_server.py"
+
 
 async def main() -> None:
-    # Dùng đúng interpreter đang chạy client (tránh lỗi "python" không tồn tại)
-    params = StdioServerParameters(command=sys.executable, args=["weather_server.py"])
+    # Dùng đúng interpreter đang chạy client + đường dẫn tuyệt đối tới server
+    # (tránh lỗi "python" không tồn tại hoặc không tìm thấy file khi cwd khác thư mục này)
+    params = StdioServerParameters(command=sys.executable, args=[str(SERVER_SCRIPT)])
 
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as session:
